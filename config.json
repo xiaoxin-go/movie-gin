@@ -1,0 +1,24 @@
+{
+  "sso_enable": false,
+  "env": "test",
+  "port": "8030",
+  "mysql":{
+    "host": "127.0.0.1",
+    "port": "3306",
+    "user": "root",
+    "password": "xiaoxin",
+    "db_name": "fip"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": "6379",
+    "db": 0
+  },
+  "log": {
+    "level": "DEBUG",
+    "filename": "test.log",
+    "max_size": 50,
+    "max_age": 5,
+    "max_backups": 5
+  }
+}
