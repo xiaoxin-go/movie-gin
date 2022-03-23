@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"movie/apps/actress"
 	"movie/apps/film"
+	"movie/apps/genre"
 	"movie/apps/image"
 	"movie/apps/link"
 )
@@ -21,6 +22,7 @@ func IncludeRouter() {
 	Include(actress.Routers)
 	Include(link.Routers)
 	Include(image.Routers)
+	Include(genre.Routers)
 }
 
 

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"gin_movie/model"
 	"log"
+	"movie/model"
+	"movie/utils"
 )
 
 func main(){

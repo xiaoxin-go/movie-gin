@@ -18,7 +18,7 @@ type FilmData struct {
 	Title       string
 	Length      string
 	Genres      []string
-	Actresses   []string
+	Actresses   []Actress
 	ReleaseDate time.Time
 	ImageUrl string
 	Links       []Link
@@ -45,6 +45,10 @@ type film struct {
 
 func (m *film) Error() error {
 	return m.error
+}
+type Actress struct{
+	Name string
+	Url string
 }
 
 func (m *film) get() {
@@ -112,19 +116,25 @@ func (m *film) genres() (result []string) {
 	}
 	return
 }
-func (m *film) actresses() (result []string) {
+func (m *film) actresses() (result []Actress) {
+
 	els, err := m.Wd.FindElements(selenium.ByCSSSelector, ".container>.movie>.info>p:last-child a")
 	if err != nil{
 		m.error = fmt.Errorf("get genres error: %s", err.Error())
 		return
 	}
 	for _, el := range els{
-		actress, err := el.Text()
+		name, err := el.Text()
 		if err != nil{
-			m.error = fmt.Errorf("get genres text error: %s", err.Error())
+			m.error = fmt.Errorf("get actress text error: %s", err.Error())
 			return
 		}
-		result = append(result, actress)
+		url, err := el.GetAttribute("href")
+		if err != nil{
+			m.error = fmt.Errorf("get actress href error: %s", err.Error())
+			return
+		}
+		result = append(result, Actress{Name: name, Url: url})
 	}
 	return
 }

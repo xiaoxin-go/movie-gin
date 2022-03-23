@@ -1,24 +1,19 @@
 package main
 
 import (
-	"crypto/tls"
-	"errors"
-	"gorm.io/gorm"
-	"io"
+	"fmt"
+	"github.com/tebeka/selenium"
 	"io/ioutil"
 	"log"
 	"movie/model"
 	"movie/utils"
-	"net/http"
-	url2 "net/url"
-	"os"
 	"strings"
-	"time"
 )
 
 func main() {
-	saveImages()
-	return
+	//getActressUrl()
+	//return
+	//return
 	service, err := utils.NewService()
 	if err != nil {
 		log.Fatal(err)
@@ -30,67 +25,76 @@ func main() {
 		log.Fatal(err)
 	}
 	defer wd.Close()
-	nameList := getMovies()
-	log.Println(nameList)
-	for _, name := range nameList{
-		log.Println("get name: ", name)
-		film := utils.NewFilm(name, wd)
-		data := film.Data()
-		if film.Error() != nil{
-			continue
-			log.Fatal(film.Error())
-		}
-		insertData(data)
-	}
-
-	time.Sleep(10 * time.Second)
-
-}
-
-func saveImages(){
-	imageList := make([]model.TImage, 0)
-	model.DB.Find(&imageList)
-	for index, image := range imageList{
-		if index < 940{
-			continue
-		}
-		log.Println(index, len(imageList))
-		saveImage(image.Name, image.Url)
-		saveImage(image.Name + "-simple", image.SimpleUrl)
-	}
-}
-func saveImage(name, url string){
-	log.Println("get image ", name, url)
-	uri, err := url2.Parse("http://127.0.0.1:7890")
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		Proxy: http.ProxyURL(uri),
-	}
-
-	client := &http.Client{Transport: tr}
-	var resp *http.Response
-	flag := 0
-	for {
-		resp, err = client.Get(url)
-		if err != nil{
-			if flag >= 3{
-				log.Fatal(err)
-			}
-			time.Sleep(1 * time.Second)
-			flag += 1
-			continue
-		}
+	//nameList := getMovies()
+	//nameList := []string{"FSDSS-373"}
+	//saveFilms(nameList, wd)
+	actressList := getActresses()
+	for _, actress := range actressList{
+		log.Printf("actress => %+v", actress)
+		actress.Url = "https://www.javbus.com/star/okq"
+		controller := utils.NewActressController(actress.Url, wd)
+		actressData := controller.Data()
+		fmt.Println("-------------------------")
+		fmt.Println(actressData)
+		fmt.Println(len(actressData.Films))
 		break
+		if controller.Error() != nil{
+			log.Fatal(controller.Error().Error())
+		}
+		fmt.Printf("%+v\n", actressData)
+		actress.Age = actressData.Age
+		actress.Birthday = actressData.Birthday
+		actress.Cup = actressData.Cup
+		actress.Height = actressData.Height
+		model.DB.Save(&actress)
 	}
+}
 
-	out, err := os.Create("./static/image/" + name + ".jpg")
-	if err != nil{
-		log.Println(err)
-		return
+func saveActressUrl(){
+	service, err := utils.NewService()
+	if err != nil {
+		log.Fatal(err)
 	}
-	_, err = io.Copy(out, resp.Body)
-	if err != nil{
-		log.Println(err)
+	defer service.Stop()
+
+	wd, err := utils.NewWindow()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer wd.Close()
+	actresses := make([]model.TActress, 0)
+	db := model.DB.Where("url is null").Find(&actresses)
+	if db.Error != nil{
+		log.Fatalf("get actress error, %s", db.Error.Error())
+	}
+	for _, actress := range actresses{
+		log.Println("actress: ", actress.Name)
+		actressFilm := model.TActressFilm{}
+		db = model.DB.Where("actress_id = ?", actress.Id).First(&actressFilm)
+		if db.Error != nil{
+			fmt.Println("get actress error---------")
+			continue
+			log.Fatalf("get actress error, %s", db.Error.Error())
+		}
+		film := model.TFilm{}
+		db = model.DB.Where("id = ?", actressFilm.FilmId).First(&film)
+		if db.Error != nil{
+			model.DB.Delete(&model.TActressFilm{}, actressFilm.Id)
+			continue
+			log.Fatalf("get film error, %s", db.Error.Error())
+		}
+		filmData := utils.NewFilm(film.Name, wd)
+		if filmData.Error() != nil{
+			continue
+			//log.Fatal(film.Error())
+		}
+		nameUrlMap := map[string]string{}
+		for _, item := range filmData.Data().Actresses{
+			nameUrlMap[item.Name] = item.Url
+		}
+		actress.Url = nameUrlMap[actress.Name]
+		fmt.Println("save-------------", actress.Url)
+		model.DB.Save(&actress)
 	}
 }
 
@@ -118,85 +122,23 @@ func getMovies()(result []string){
 	return
 }
 
-func insertData(data utils.FilmData){
-	log.Println("insert film data......................")
-	log.Println(data)
-	log.Println(data.Name)
-	film := model.TFilm{
-		Name: data.Name,
-		Title: data.Title,
-		Image: data.ImageUrl,
-		ReleaseDate: data.ReleaseDate,
-		Length: data.Length,
+func getActresses()(result []model.TActress){
+	result = make([]model.TActress, 0)
+	db := model.DB.Where("url is not null").Find(&result)
+	if db.Error != nil{
+		log.Fatalf("find actress error => %s", db.Error.Error())
 	}
-	filmId := insertFilm(film)
-	log.Println("filmId==========================", filmId, data.Name)
-	log.Println("insert actress data.....................")
-	for _, name := range data.Actresses{
-		actressId := insertActress(model.TActress{
-			Name: name,
-		})
-		insertActressFilm(model.TActressFilm{
-			ActressId: actressId,
-			FilmId: filmId,
-		})
-	}
-	log.Println("insert genre data......................")
-	for _, name := range data.Genres{
-		genreId := insertGenre(model.TGenre{Name: name})
-		insertGenreFilm(model.TGenreFilm{
-			GenreId: genreId,
-			FilmId: filmId,
-		})
-	}
-	log.Println("insert links........................")
-	filmLinks := make([]model.TLink, 0)
-	for _, link := range data.Links{
-		filmLinks = append(filmLinks, model.TLink{Name: link.Name, Magnet: link.Magnet,
-			Size: link.Size, ShareDate: link.ShareDate, FilmId: filmId})
-	}
-	model.DB.Create(&filmLinks)
-	log.Println("insert images........................")
-	filmImages := make([]model.TImage, 0)
-	for _, image := range data.Images{
-		filmImages = append(filmImages, model.TImage{Name: image.Name,
-			Url: image.Url, SimpleUrl: image.SimpleUrl, FilmId: filmId})
-	}
-	model.DB.Create(&filmImages)
+	return
 }
 
-func insertGenre(genre model.TGenre)int{
-	db := model.DB.Model(&model.TGenre{}).Where("name = ?", genre.Name).First(&genre)
-	if errors.Is(db.Error, gorm.ErrRecordNotFound){
-		model.DB.Create(&genre)
-	}
-	return genre.Id
-}
-func insertActress(actress model.TActress)(result int){
-	db := model.DB.Model(&model.TActress{}).Where("name = ?", actress.Name).First(&actress)
-	if errors.Is(db.Error, gorm.ErrRecordNotFound){
-		model.DB.Create(&actress)
-	}
-	return actress.Id
-}
-func insertFilm(film model.TFilm)(result int){
-	data := model.TFilm{}
-	db := model.DB.Model(&model.TFilm{}).Where("name = ?", film.Name).First(&data)
-	if errors.Is(db.Error, gorm.ErrRecordNotFound){
-		model.DB.Create(&film)
-		return film.Id
-	}
-	return data.Id
-}
-func insertActressFilm(data model.TActressFilm){
-	db := model.DB.Model(&model.TActressFilm{}).Where("actress_id = ? and film_id = ?", data.ActressId, data.FilmId).First(&data)
-	if errors.Is(db.Error, gorm.ErrRecordNotFound){
-		model.DB.Create(&data)
-	}
-}
-func insertGenreFilm(data model.TGenreFilm){
-	db := model.DB.Model(&model.TGenreFilm{}).Where("genre_id = ? and film_id = ?", data.GenreId, data.FilmId).First(&data)
-	if errors.Is(db.Error, gorm.ErrRecordNotFound){
-		model.DB.Create(&data)
+func saveFilms(names []string, wd selenium.WebDriver){
+	for _, name := range names{
+		log.Println("get name ===> ", name)
+		film := utils.NewFilm(name, wd)
+		data := film.Data()
+		if film.Error() != nil{
+			log.Fatal(film.Error())
+		}
+		utils.InsertFilmData(data)
 	}
 }
