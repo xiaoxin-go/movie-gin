@@ -7,6 +7,7 @@ import (
 	"movie/model"
 	"movie/utils"
 	"net/http"
+	"sync"
 )
 
 type Handler struct {
@@ -14,11 +15,16 @@ type Handler struct {
 }
 
 var handler *Handler
+var lock *sync.Mutex
+var activeMap map[int]bool
 
 func init() {
+	lock = &sync.Mutex{}
+	activeMap = make(map[int]bool)
 	handler = &Handler{}
 	handler.Data = &model.TActress{}
 }
+
 func (c *Handler) Film(request *gin.Context) {
 	id := c.GetParamId(request)
 	page, pageSize := c.GetPagination(request)
@@ -76,6 +82,13 @@ func (c *Handler) Delete(request *gin.Context){
 
 func (c *Handler) Films(request *gin.Context){
 	id := c.GetParamId(request)
+	if activeMap[id]{
+		return
+	}
+	activeMap[id] = true
+	defer delete(activeMap, id)
+	lock.Lock()
+	defer lock.Unlock()
 	actress := model.TActress{}
 	db := model.DB.First(&actress, id)
 	if db.Error != nil{

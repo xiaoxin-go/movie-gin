@@ -87,9 +87,10 @@ func (t *actress) labelValue(text, label string)string{
 }
 func (t *actress) page()int{
 	els, err := t.wd.FindElements(selenium.ByCSSSelector, ".pagination>li>a")
-	if err != nil{
+	if err != nil || len(els) < 2{
 		return 1
 	}
+	fmt.Println("=======> ", els)
 	el := els[len(els) - 2]
 	pageStr, err := el.Text()
 	fmt.Println("page => ", pageStr)

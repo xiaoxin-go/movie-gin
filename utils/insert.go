@@ -35,10 +35,12 @@ func InsertFilmData(data FilmData){
 			Name: item.Name,
 			Url: item.Url,
 		})
-		insertActressFilm(model.TActressFilm{
-			ActressId: actressId,
-			FilmId: film.Id,
-		})
+		if actressId > 0{
+			insertActressFilm(model.TActressFilm{
+				ActressId: actressId,
+				FilmId: film.Id,
+			})
+		}
 	}
 	log.Println("insert genre data......................")
 	for _, name := range data.Genres{
@@ -79,6 +81,7 @@ func insertGenre(genre model.TGenre)int{
 func insertActress(actress model.TActress)(result int){
 	db := model.DB.Model(&model.TActress{}).Where("name = ?", actress.Name).First(&actress)
 	if errors.Is(db.Error, gorm.ErrRecordNotFound){
+		return
 		model.DB.Create(&actress)
 	}
 	return actress.Id
