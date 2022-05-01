@@ -62,4 +62,20 @@ type TImage struct{
     SimpleUrl string `gorm:"column:simple_url" json:"simple_url"`
 }
 
+type TUser struct{
+    Model
+    Username string `gorm:"username" json:"username"`
+    Password string `gorm:"password" json:"password"`
+}
 
+type TUserFollow struct{
+    Model
+    UserId int `gorm:"user_id" json:"user_id"`
+    ActressId int `gorm:"actress_id" json:"actress_id"`
+}
+
+type TUserCollect struct{
+    Model
+    UserId int `gorm:"user_id" json:"user_id"`
+    FilmId int `gorm:"film_id" json:"film_id"`
+}

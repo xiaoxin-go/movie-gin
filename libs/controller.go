@@ -70,7 +70,7 @@ func (c *Controller) QuerySet(request *gin.Context)(db *gorm.DB, total int64){
 	// 匹配查询
 	//db = db.Where(fields)
 	for field, value := range fields {
-		db = db.Where(fmt.Sprintf("%s LIKE ?", field), "%"+value+"%")
+		db = db.Where(fmt.Sprintf("%s = ?", field), value)
 	}
 
 	// 模糊查询

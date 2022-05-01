@@ -1,6 +1,9 @@
 {
   "sso_enable": false,
   "env": "test",
+  "image_path": "E:/FFOutput/static/images/",
+  "movie_path": "E:/FFOutput/static/movies/",
+  "proxy": "http://127.0.0.1:7890",
   "port": "8030",
   "mysql":{
     "host": "127.0.0.1",

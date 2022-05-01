@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"log"
+	config "movie/conf"
 	"movie/libs"
 	"movie/model"
 	"movie/utils"
@@ -116,7 +117,7 @@ func (c *Handler) Post(request *gin.Context){
 		request.JSON(http.StatusOK, libs.ServerError(film.Error().Error()))
 		return
 	}
-	utils.InsertFilmData(film.Data())
+	utils.InsertFilmData(film.Data(), true)
 	request.JSON(http.StatusOK, libs.Success(data, "ok"))
 }
 func (c *Handler) Cover(request *gin.Context){
@@ -144,4 +145,159 @@ func (c *Handler) Cover(request *gin.Context){
 		}
 	}
 	request.JSON(http.StatusOK, libs.Success(nil, "ok"))
+}
+func (c *Handler) AddLink(request *gin.Context){
+	id := c.GetParamId(request)
+	data := model.TFilm{}
+	db := model.DB.First(&data, id)
+	if db.Error != nil{
+		zap.L().Error("获取film异常: " + db.Error.Error())
+		request.JSON(http.StatusOK, libs.ServerError(db.Error.Error()))
+		return
+	}
+	service, err := utils.NewService()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer service.Stop()
+
+	wd, err := utils.NewWindow()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer wd.Close()
+	film := utils.NewFilm(data.Name, wd)
+	if film.Error() != nil{
+		request.JSON(http.StatusOK, libs.ServerError(film.Error().Error()))
+		return
+	}
+	utils.InsertFilmLinks(data.Id, film.Data().Links)
+	request.JSON(http.StatusOK, libs.Success(data, "ok"))
+}
+func (c *Handler) AddImage(request *gin.Context){
+	id := c.GetParamId(request)
+	data := model.TFilm{}
+	db := model.DB.First(&data, id)
+	if db.Error != nil{
+		zap.L().Error("获取film异常: " + db.Error.Error())
+		request.JSON(http.StatusOK, libs.ServerError(db.Error.Error()))
+		return
+	}
+	service, err := utils.NewService()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer service.Stop()
+
+	wd, err := utils.NewWindow()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer wd.Close()
+	film := utils.NewFilm(data.Name, wd)
+	if film.Error() != nil{
+		request.JSON(http.StatusOK, libs.ServerError(film.Error().Error()))
+		return
+	}
+	utils.InsertFilmImages(data.Id, film.Data().Images)
+	request.JSON(http.StatusOK, libs.Success(data, "ok"))
+}
+func (c *Handler) SaveImage(request *gin.Context){
+	id := c.GetParamId(request)
+	images := make([]model.TImage, 0)
+	db := model.DB.Where("film_id = ?", id).Find(&images)
+	if db.Error != nil{
+		zap.L().Error("获取film异常: " + db.Error.Error())
+		request.JSON(http.StatusOK, libs.ServerError(db.Error.Error()))
+		return
+	}
+	for _, image := range images{
+		utils.SaveImage(image.Name + "-simple", image.SimpleUrl)
+		utils.SaveImage(image.Name, image.Url)
+	}
+}
+func (c *Handler) Collect(request *gin.Context){
+	id := c.GetParamId(request)
+	user, err := utils.GetCookieUser(request)
+	if err != nil{
+		zap.L().Info(fmt.Sprintf("获取用户信息异常, %s", err.Error()))
+		request.JSON(http.StatusOK, libs.ServerError(err.Error()))
+		return
+	}
+	count := isCollect(id, user.Id)
+	if count > 0{
+		request.JSON(http.StatusOK, libs.Success(nil, "收藏成功"))
+		return
+	}
+	userCollect := model.TUserCollect{FilmId: id, UserId: user.Id}
+	db := model.DB.Create(&userCollect)
+	if db.Error != nil{
+		zap.L().Info(fmt.Sprintf("创建user collect异常, %s, data: %+v", db.Error.Error(), userCollect))
+		request.JSON(http.StatusOK, libs.ServerError("服务器异常"))
+		return
+	}
+	request.JSON(http.StatusOK, libs.Success(nil, "收藏成功"))
+	return
+}
+func (c *Handler) UnCollect(request *gin.Context){
+	id := c.GetParamId(request)
+	user, err := utils.GetCookieUser(request)
+	if err != nil{
+		zap.L().Error(fmt.Sprintf("获取用户信息异常, %s", err.Error()))
+		request.JSON(http.StatusOK, libs.ServerError(err.Error()))
+		return
+	}
+	userCollect := model.TUserCollect{}
+	db := model.DB.Where("film_id = ? and user_id = ?", id, user.Id).First(&userCollect)
+	if db.Error != nil{
+		zap.L().Error(fmt.Sprintf("查询user collect error: %s, film_id: %d, user_id: %d", db.Error.Error(), id, user.Id))
+		request.JSON(http.StatusOK, libs.ServerError("服务器异常"))
+		return
+	}
+	db = model.DB.Delete(&userCollect)
+	if db.Error != nil{
+		zap.L().Error(fmt.Sprintf("删除user collect error: %s, userCollect: %+v", db.Error.Error(), userCollect))
+		request.JSON(http.StatusOK, libs.ServerError("服务器异常"))
+		return
+	}
+	request.JSON(http.StatusOK, libs.Success(nil, "ok"))
+}
+func (c *Handler) IsCollect(request *gin.Context){
+	id := c.GetParamId(request)
+	user, err := utils.GetCookieUser(request)
+	if err != nil{
+		zap.L().Info(fmt.Sprintf("获取用户信息异常, %s", err.Error()))
+		request.JSON(http.StatusOK, libs.ServerError(err.Error()))
+		return
+	}
+	count := isCollect(id, user.Id)
+	request.JSON(http.StatusOK, libs.Success(count, "ok"))
+	return
+}
+func (c *Handler) IsPlayer(request *gin.Context){
+	id := c.GetParamId(request)
+	data := model.TFilm{}
+	db := model.DB.First(&data, id)
+	if db.Error != nil{
+		zap.L().Error("获取film异常: " + db.Error.Error())
+		request.JSON(http.StatusOK, libs.ServerError(db.Error.Error()))
+		return
+	}
+	filename := fmt.Sprintf("%s%s.mp4", config.Config.MoviePath, data.Name)
+	_, err := os.Stat(filename)
+	if err == nil{
+		request.JSON(http.StatusOK, libs.Success(1, "ok"))
+		return
+	}
+	request.JSON(http.StatusOK, libs.Success(0, "ok"))
+}
+
+func isCollect(filmId, userId int)(result int64){
+	var count int64
+	db := model.DB.Model(&model.TUserCollect{}).Where("film_id = ? and user_id = ?", filmId, userId).Count(&count)
+	if db.Error != nil{
+		zap.L().Info(fmt.Sprintf("查询user collect异常, %s, film_id: %d, user_id: %d", db.Error.Error(), filmId, userId))
+		return
+	}
+	return count
 }

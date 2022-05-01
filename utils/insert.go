@@ -3,9 +3,11 @@ package utils
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"gorm.io/gorm"
 	"io"
 	"log"
+	config "movie/conf"
 	"movie/model"
 	"net/http"
 	url2 "net/url"
@@ -13,9 +15,8 @@ import (
 	"time"
 )
 
-func InsertFilmData(data FilmData){
+func InsertFilmData(data FilmData, addActress bool){
 	log.Println("insert film data......................")
-	log.Println(data)
 	log.Println(data.Name)
 	film := model.TFilm{
 		Name: data.Name,
@@ -34,7 +35,7 @@ func InsertFilmData(data FilmData){
 		actressId := insertActress(model.TActress{
 			Name: item.Name,
 			Url: item.Url,
-		})
+		}, addActress)
 		if actressId > 0{
 			insertActressFilm(model.TActressFilm{
 				ActressId: actressId,
@@ -50,25 +51,29 @@ func InsertFilmData(data FilmData){
 			FilmId: film.Id,
 		})
 	}
+	InsertFilmLinks(film.Id, data.Links)
+	InsertFilmImages(film.Id, data.Images)
+	saveFilmImage(film)
+}
+func InsertFilmLinks(filmId int, links []Link){
 	log.Println("insert links........................")
 	filmLinks := make([]model.TLink, 0)
-	for _, link := range data.Links{
+	for _, link := range links{
 		filmLinks = append(filmLinks, model.TLink{Name: link.Name, Magnet: link.Magnet,
-			Size: link.Size, ShareDate: link.ShareDate, FilmId: film.Id})
+			Size: link.Size, ShareDate: link.ShareDate, FilmId: filmId})
 	}
 	if len(filmLinks) > 0{
 		model.DB.Create(&filmLinks)
 	}
-
+}
+func InsertFilmImages(filmId int, images []Image){
 	log.Println("insert images........................")
 	filmImages := make([]model.TImage, 0)
-	for _, image := range data.Images{
+	for _, image := range images{
 		filmImages = append(filmImages, model.TImage{Name: image.Name,
-			Url: image.Url, SimpleUrl: image.SimpleUrl, FilmId: film.Id})
+			Url: image.Url, SimpleUrl: image.SimpleUrl, FilmId: filmId})
 	}
 	model.DB.Create(&filmImages)
-	saveFilmImage(film)
-
 }
 
 func insertGenre(genre model.TGenre)int{
@@ -78,10 +83,12 @@ func insertGenre(genre model.TGenre)int{
 	}
 	return genre.Id
 }
-func insertActress(actress model.TActress)(result int){
+func insertActress(actress model.TActress, addActress bool)(result int){
 	db := model.DB.Model(&model.TActress{}).Where("name = ?", actress.Name).First(&actress)
 	if errors.Is(db.Error, gorm.ErrRecordNotFound){
-		return
+		if !addActress{
+			return
+		}
 		model.DB.Create(&actress)
 	}
 	return actress.Id
@@ -109,19 +116,25 @@ func insertGenreFilm(data model.TGenreFilm){
 }
 
 func saveFilmImage(film model.TFilm){
-	saveImage(film.Name, film.Image)
+	SaveImage(film.Name, film.Image)
 	imageList := make([]model.TImage, 0)
 	model.DB.Where("film_id = ?", film.Id).Find(&imageList)
 	for index, image := range imageList{
 		log.Println(index, len(imageList))
-		go saveImage(image.Name, image.Url)
-		go saveImage(image.Name + "-simple", image.SimpleUrl)
-		time.Sleep(time.Second)
+		go SaveImage(image.Name, image.Url)
+		go SaveImage(image.Name + "-simple", image.SimpleUrl)
+		time.Sleep(200 * time.Millisecond)
 	}
 }
-func saveImage(name, url string){
+func SaveImage(name, url string){
+	filename := config.Config.ImagePath + name + ".jpg"
+	_, err := os.Stat(filename)
+	if err == nil{
+		fmt.Printf("%s is already exists", name)
+		return
+	}
 	log.Println("get image ", name, url)
-	uri, err := url2.Parse("http://127.0.0.1:7890")
+	uri, err := url2.Parse(config.Config.Proxy)
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		Proxy: http.ProxyURL(uri),
@@ -143,7 +156,7 @@ func saveImage(name, url string){
 		break
 	}
 
-	out, err := os.Create("E:/FFOutput/static/images/" + name + ".jpg")
+	out, err := os.Create(filename)
 	if err != nil{
 		log.Println(err)
 		return

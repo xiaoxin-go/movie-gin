@@ -7,6 +7,8 @@ import (
 	"movie/apps/genre"
 	"movie/apps/image"
 	"movie/apps/link"
+	"movie/apps/login"
+	"movie/apps/register"
 )
 
 type Option func(engine *gin.Engine)
@@ -23,6 +25,8 @@ func IncludeRouter() {
 	Include(link.Routers)
 	Include(image.Routers)
 	Include(genre.Routers)
+	Include(login.Routers)
+	Include(register.Routers)
 }
 
 

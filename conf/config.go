@@ -9,6 +9,9 @@ import (
 type config struct {
 	Env               string `json:"env"`
 	Port			  string `json:"port"`
+	ImagePath string `json:"image_path"`
+	MoviePath string `json:"movie_path"`
+	Proxy string `json:"proxy"`
 	Mysql             Mysql  `json:"mysql"`
 	Redis             Redis  `json:"redis"`
 	Log               Log    `json:"log"`

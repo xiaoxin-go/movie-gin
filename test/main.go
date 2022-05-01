@@ -31,13 +31,13 @@ func main() {
 	actressList := getActresses()
 	for _, actress := range actressList{
 		log.Printf("actress => %+v", actress)
-		actress.Url = "https://www.javbus.com/star/okq"
+		//actress.Url = "https://www.javbus.com/star/okq"
 		controller := utils.NewActressController(actress.Url, wd)
 		actressData := controller.Data()
 		fmt.Println("-------------------------")
 		fmt.Println(actressData)
 		fmt.Println(len(actressData.Films))
-		break
+		//break
 		if controller.Error() != nil{
 			log.Fatal(controller.Error().Error())
 		}
@@ -124,7 +124,7 @@ func getMovies()(result []string){
 
 func getActresses()(result []model.TActress){
 	result = make([]model.TActress, 0)
-	db := model.DB.Where("url is not null").Find(&result)
+	db := model.DB.Where("cup = ?", "").Order("-id").Find(&result)
 	if db.Error != nil{
 		log.Fatalf("find actress error => %s", db.Error.Error())
 	}
@@ -139,6 +139,6 @@ func saveFilms(names []string, wd selenium.WebDriver){
 		if film.Error() != nil{
 			log.Fatal(film.Error())
 		}
-		utils.InsertFilmData(data)
+		utils.InsertFilmData(data, true)
 	}
 }

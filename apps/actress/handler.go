@@ -1,6 +1,7 @@
 package actress
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"movie/libs"
@@ -83,6 +84,7 @@ func (c *Handler) Delete(request *gin.Context){
 func (c *Handler) Films(request *gin.Context){
 	id := c.GetParamId(request)
 	if activeMap[id]{
+		request.JSON(http.StatusOK, libs.ParamsError("已在请求中...."))
 		return
 	}
 	activeMap[id] = true
@@ -133,7 +135,75 @@ func (c *Handler) Films(request *gin.Context){
 			continue
 		}
 		zap.L().Info("insert film ===> " + item)
-		utils.InsertFilmData(filmData)
+		utils.InsertFilmData(filmData, false)
 	}
 	request.JSON(http.StatusOK, libs.Success(nil, "ok"))
+}
+func (c *Handler) Follow(request *gin.Context){
+	id := c.GetParamId(request)
+	user, err := utils.GetCookieUser(request)
+	if err != nil{
+		zap.L().Info(fmt.Sprintf("获取用户信息异常, %s", err.Error()))
+		request.JSON(http.StatusOK, libs.ServerError(err.Error()))
+		return
+	}
+	count := isFollow(id, user.Id)
+	if count > 0{
+		request.JSON(http.StatusOK, libs.Success(nil, "收藏成功"))
+		return
+	}
+	userFollow := model.TUserFollow{ActressId: id, UserId: user.Id}
+	db := model.DB.Create(&userFollow)
+	if db.Error != nil{
+		zap.L().Info(fmt.Sprintf("创建user follow异常, %s, data: %+v", db.Error.Error(), userFollow))
+		request.JSON(http.StatusOK, libs.ServerError("服务器异常"))
+		return
+	}
+	request.JSON(http.StatusOK, libs.Success(nil, "关注成功"))
+	return
+}
+func (c *Handler) UnFollow(request *gin.Context){
+	id := c.GetParamId(request)
+	user, err := utils.GetCookieUser(request)
+	if err != nil{
+		zap.L().Error(fmt.Sprintf("获取用户信息异常, %s", err.Error()))
+		request.JSON(http.StatusOK, libs.ServerError(err.Error()))
+		return
+	}
+	userFollow := model.TUserFollow{}
+	db := model.DB.Where("actress_id = ? and user_id = ?", id, user.Id).First(&userFollow)
+	if db.Error != nil{
+		zap.L().Error(fmt.Sprintf("查询user follow error: %s, actress_id: %d, user_id: %d", db.Error.Error(), id, user.Id))
+		request.JSON(http.StatusOK, libs.ServerError("服务器异常"))
+		return
+	}
+	db = model.DB.Delete(&userFollow)
+	if db.Error != nil{
+		zap.L().Error(fmt.Sprintf("删除user follow error: %s, userFollow: %+v", db.Error.Error(), userFollow))
+		request.JSON(http.StatusOK, libs.ServerError("服务器异常"))
+		return
+	}
+	request.JSON(http.StatusOK, libs.Success(nil, "ok"))
+}
+func (c *Handler) IsFollow(request *gin.Context){
+	id := c.GetParamId(request)
+	user, err := utils.GetCookieUser(request)
+	if err != nil{
+		zap.L().Info(fmt.Sprintf("获取用户信息异常, %s", err.Error()))
+		request.JSON(http.StatusOK, libs.ServerError(err.Error()))
+		return
+	}
+	count := isFollow(id, user.Id)
+	request.JSON(http.StatusOK, libs.Success(count, "ok"))
+	return
+}
+
+func isFollow(actressId, userId int)(result int64){
+	var count int64
+	db := model.DB.Model(&model.TUserFollow{}).Where("actress_id = ? and user_id = ?", actressId, userId).Count(&count)
+	if db.Error != nil{
+		zap.L().Info(fmt.Sprintf("查询user follow异常, %s, actress_id: %d, user_id: %d", db.Error.Error(), actressId, userId))
+		return
+	}
+	return count
 }
