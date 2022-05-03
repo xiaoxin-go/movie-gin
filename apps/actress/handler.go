@@ -144,7 +144,6 @@ func (c *Handler) Follow(request *gin.Context){
 	user, err := utils.GetCookieUser(request)
 	if err != nil{
 		zap.L().Info(fmt.Sprintf("获取用户信息异常, %s", err.Error()))
-		request.JSON(http.StatusOK, libs.ServerError(err.Error()))
 		return
 	}
 	count := isFollow(id, user.Id)
@@ -167,7 +166,6 @@ func (c *Handler) UnFollow(request *gin.Context){
 	user, err := utils.GetCookieUser(request)
 	if err != nil{
 		zap.L().Error(fmt.Sprintf("获取用户信息异常, %s", err.Error()))
-		request.JSON(http.StatusOK, libs.ServerError(err.Error()))
 		return
 	}
 	userFollow := model.TUserFollow{}
@@ -187,13 +185,11 @@ func (c *Handler) UnFollow(request *gin.Context){
 }
 func (c *Handler) IsFollow(request *gin.Context){
 	id := c.GetParamId(request)
+	var count int64
 	user, err := utils.GetCookieUser(request)
-	if err != nil{
-		zap.L().Info(fmt.Sprintf("获取用户信息异常, %s", err.Error()))
-		request.JSON(http.StatusOK, libs.ServerError(err.Error()))
-		return
+	if err == nil{
+		count = isFollow(id, user.Id)
 	}
-	count := isFollow(id, user.Id)
 	request.JSON(http.StatusOK, libs.Success(count, "ok"))
 	return
 }

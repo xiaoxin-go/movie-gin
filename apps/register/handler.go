@@ -2,7 +2,6 @@ package register
 
 import (
 	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"movie/libs"
@@ -22,14 +21,11 @@ func register(request *gin.Context){
 	}
 	user := model.TUser{Username: requestData.Username, Password: requestData.Password}
 	db := model.DB.Where("username = ?", requestData.Username).First(&user)
-	fmt.Println("----------------------", db.Error.Error())
 	if !errors.Is(db.Error, gorm.ErrRecordNotFound){
-		request.JSON(http.StatusOK, libs.ParamsError("服务器异常"))
+		request.JSON(http.StatusOK, libs.ParamsError("用户名已存在"))
 		return
 	}
-	fmt.Printf("%+v\n", user)
 	db = model.DB.Create(&user)
-	fmt.Println("db.error---------", db.Error)
 	if db.Error != nil{
 		request.JSON(http.StatusOK, libs.ParamsError("服务器异常"))
 		return

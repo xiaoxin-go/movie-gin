@@ -221,7 +221,6 @@ func (c *Handler) Collect(request *gin.Context){
 	user, err := utils.GetCookieUser(request)
 	if err != nil{
 		zap.L().Info(fmt.Sprintf("获取用户信息异常, %s", err.Error()))
-		request.JSON(http.StatusOK, libs.ServerError(err.Error()))
 		return
 	}
 	count := isCollect(id, user.Id)
@@ -244,7 +243,6 @@ func (c *Handler) UnCollect(request *gin.Context){
 	user, err := utils.GetCookieUser(request)
 	if err != nil{
 		zap.L().Error(fmt.Sprintf("获取用户信息异常, %s", err.Error()))
-		request.JSON(http.StatusOK, libs.ServerError(err.Error()))
 		return
 	}
 	userCollect := model.TUserCollect{}
@@ -263,14 +261,12 @@ func (c *Handler) UnCollect(request *gin.Context){
 	request.JSON(http.StatusOK, libs.Success(nil, "ok"))
 }
 func (c *Handler) IsCollect(request *gin.Context){
+	var count int64
 	id := c.GetParamId(request)
 	user, err := utils.GetCookieUser(request)
-	if err != nil{
-		zap.L().Info(fmt.Sprintf("获取用户信息异常, %s", err.Error()))
-		request.JSON(http.StatusOK, libs.ServerError(err.Error()))
-		return
+	if err == nil{
+		count = isCollect(id, user.Id)
 	}
-	count := isCollect(id, user.Id)
 	request.JSON(http.StatusOK, libs.Success(count, "ok"))
 	return
 }

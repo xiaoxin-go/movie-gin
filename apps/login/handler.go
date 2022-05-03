@@ -46,6 +46,7 @@ func login(request *gin.Context){
 		fmt.Println("存入redis error: ", r.Error.Error())
 		request.JSON(http.StatusOK, libs.ServerError("服务器异常"))
 	}
-	request.SetCookie("movie_cookie", u4Str, 3600, "/", "localhost", false, true)
-	request.JSON(http.StatusOK, libs.Success(nil, "登录成功"))
+	request.SetCookie("movie_cookie", u4Str, 3600*24, "/", "", false, true)
+	fmt.Println("---------------")
+	request.JSON(http.StatusOK, libs.Success(user.Username, "登录成功"))
 }

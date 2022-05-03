@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"movie/libs"
 	"movie/model"
+	"net/http"
 	"time"
 )
 
@@ -25,6 +27,7 @@ func GetCookieUser(request *gin.Context)(result model.TUser, err error){
 	cookie, err := request.Cookie("movie_cookie")
 	if err != nil{
 		err = errors.New("用户未登录")
+		request.JSON(http.StatusOK, libs.SessionError("用户未登录"))
 		return
 	}
 	result = model.TUser{}
@@ -32,7 +35,7 @@ func GetCookieUser(request *gin.Context)(result model.TUser, err error){
 	r.GetJson(cookie, &result)
 	if r.Error != nil{
 		zap.L().Info(fmt.Sprintf("获取redis cookie异常, %s, cookie:%s", r.Error.Error(), cookie))
-		err = errors.New("读取redis信息失败")
+		request.JSON(http.StatusOK, libs.ServerError("获取cookie异常"))
 		return
 	}
 	return

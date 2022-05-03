@@ -3,7 +3,9 @@ package routers
 import (
 	"github.com/gin-gonic/gin"
 	"movie/apps/actress"
+	"movie/apps/collect"
 	"movie/apps/film"
+	"movie/apps/follow"
 	"movie/apps/genre"
 	"movie/apps/image"
 	"movie/apps/link"
@@ -27,6 +29,8 @@ func IncludeRouter() {
 	Include(genre.Routers)
 	Include(login.Routers)
 	Include(register.Routers)
+	Include(collect.Routers)
+	Include(follow.Routers)
 }
 
 
