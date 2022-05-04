@@ -11,6 +11,7 @@ import (
 	"movie/utils"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type Handler struct {
@@ -296,4 +297,31 @@ func isCollect(filmId, userId int)(result int64){
 		return
 	}
 	return count
+}
+
+func (c *Handler)Player(request *gin.Context){
+	dir, err := os.ReadDir(config.Config.MoviePath)
+	page, pageSize := c.GetPagination(request)
+	if err != nil{
+		request.JSON(http.StatusOK, libs.ServerError("读取文件失败"))
+		return
+	}
+	nameList := make([]string, 0)
+	for _, item := range dir{
+		nameList = append(nameList, strings.Split(item.Name(), ".")[0])
+	}
+	var total int64
+	dataList := make([]model.TFilm, 0)
+	db := model.DB.Model(&model.TFilm{}).Where("name in ?", nameList).Count(&total).
+			Limit(pageSize).Offset((page - 1) * pageSize).Find(&dataList)
+	if db.Error != nil{
+		zap.L().Error(fmt.Sprintf("获取film信息异常: %s", db.Error.Error()))
+		request.JSON(http.StatusOK, libs.ServerError("获取电影信息失败"))
+		return
+	}
+	result := map[string]interface{}{
+		"total": total,
+		"data_list": dataList,
+	}
+	request.JSON(http.StatusOK, libs.Success(result, "ok"))
 }

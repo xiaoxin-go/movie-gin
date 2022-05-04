@@ -18,4 +18,5 @@ func Routers(e *gin.Engine){
 	e.POST("/film/:id/uncollect", handler.UnCollect)
 	e.GET("/film/:id/iscollect", handler.IsCollect)
 	e.GET("/film/:id/isplayer", handler.IsPlayer)
+	e.GET("/film/player", handler.Player)
 }
