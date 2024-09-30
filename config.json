@@ -1,0 +1,12 @@
+{
+  "database": {
+    "user": "root",
+    "password": "xiaoxin",
+    "host": "127.0.0.1",
+    "port": 3306,
+    "name": "movie"
+  },
+  "server": {
+    "port": 8030
+  }
+}
