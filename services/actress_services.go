@@ -2,8 +2,8 @@ package services
 
 import "movie/models"
 
-func GetFilmDetail(name string) (*models.TFilm, error) {
-	result := models.TFilm{}
+func GetActressDetail(name string) (*models.TActress, error) {
+	result := models.TActress{}
 	if e := result.GetDetailByName(name); e != nil {
 		return nil, e
 	}

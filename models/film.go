@@ -26,7 +26,7 @@ func (t *TFilm) FirstByName(name string) error {
 }
 func (t *TFilm) GetDetailByName(name string) error {
 	if e := database.DB.Where("name = ?", name).Preload("Actresses").Preload("Images").Preload("Links").First(t).Error; e != nil {
-		return fmt.Errorf("获取, name: %s, err: %w", name, e)
+		return fmt.Errorf("获取电影信息失败, name: %s, err: %w", name, e)
 	}
 	return nil
 }
