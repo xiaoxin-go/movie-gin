@@ -1,0 +1,5 @@
+dist
+*.log
+bin
+.idea
+*.exe
