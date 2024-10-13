@@ -14,8 +14,8 @@ type TActress struct {
 	Films    []*TFilm `gorm:"many2many:t_actress_film;" json:"films"`
 }
 
-func (t *TActress) GetDetailByName(name string) error {
-	if e := database.DB.Where("name = ?", name).Preload("Films").First(t).Error; e != nil {
+func (t *TActress) FirstByName(name string) error {
+	if e := database.DB.Where("name = ?", name).First(t).Error; e != nil {
 		return fmt.Errorf("获取演员信息失败, name: %s, err: %w", name, e)
 	}
 	return nil

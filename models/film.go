@@ -24,6 +24,13 @@ func (t *TFilm) FirstByName(name string) error {
 	}
 	return nil
 }
+func (t *TFilm) FindByIds(ids []int) ([]*TFilm, error) {
+	result := make([]*TFilm, 0)
+	if e := database.DB.Where("id in ?", ids).Find(&result).Error; e != nil {
+		return nil, fmt.Errorf("获取电影信息失败, err: %w", e)
+	}
+	return result, nil
+}
 func (t *TFilm) GetDetailByName(name string) error {
 	if e := database.DB.Where("name = ?", name).Preload("Actresses").Preload("Images").Preload("Links").First(t).Error; e != nil {
 		return fmt.Errorf("获取电影信息失败, name: %s, err: %w", name, e)

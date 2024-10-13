@@ -20,6 +20,9 @@ func (t *TLink) BulkCreate(tx *gorm.DB, links []*TLink) error {
 	if tx == nil {
 		tx = database.DB
 	}
+	if len(links) <= 0 {
+		return nil
+	}
 	if e := tx.Create(&links).Error; e != nil {
 		return fmt.Errorf("create links error:%w", e)
 	}

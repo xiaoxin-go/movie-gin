@@ -10,7 +10,6 @@ import (
 	"movie/database"
 	model "movie/models"
 	"net/http"
-	"net/url"
 	"os"
 	"time"
 )
@@ -138,10 +137,10 @@ func SaveImage(name, url1 string) error {
 	req.Header.Set("Referer", "https://www.javbus.com")
 	req.Header.Set("Host", "https://www.javbus.com")
 	log.Println("get image ", name, url1)
-	uri, err := url.Parse("127.0.0.1:10809")
+	//uri, err := url.Parse("127.0.0.1:10809")
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		Proxy:           http.ProxyURL(uri),
+		//Proxy:           http.ProxyURL(uri),
 	}
 
 	client := &http.Client{Transport: tr, Timeout: time.Second * 3}
@@ -157,6 +156,9 @@ func SaveImage(name, url1 string) error {
 			time.Sleep(1 * time.Second)
 			flag += 1
 			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("get image %s error, status_code: %d", name, resp.StatusCode)
 		}
 		break
 	}

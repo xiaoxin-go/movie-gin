@@ -8,6 +8,8 @@ import (
 	"movie/database"
 	"movie/migrate"
 	"movie/routes"
+	"net/http"
+	"os"
 )
 
 func main() {
@@ -29,6 +31,15 @@ func main() {
 	// 设置路由
 	log.Println("注册路由--->")
 	routes.SetupRoutes(r)
+
+	if f, err := os.Stat("dist/"); err == nil && f.IsDir() {
+		// 模板渲染
+		r.LoadHTMLGlob("dist/index.html")
+		// 静态目录
+		r.StaticFS("/css", http.Dir("dist/css"))
+		r.StaticFS("/js", http.Dir("dist/js"))
+		r.StaticFS("/img", http.Dir("dist/img"))
+	}
 
 	// 启动服务
 	log.Println("启用服务--->")

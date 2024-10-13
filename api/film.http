@@ -2,3 +2,4 @@
 GET http://localhost:8030/api/v1/films
 
 ###
+GET http://localhost:8030/api/v1/actress/detail?name=八掛うみ&page=1&size=2
