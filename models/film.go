@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"movie/database"
-	"time"
 )
 
 type TFilm struct {
 	BaseModel
 	Name        string      `gorm:"size:20;unique" json:"name"`
 	Title       string      `gorm:"size:2000" json:"title"`
-	ReleaseDate time.Time   `json:"release_date"`
+	ReleaseDate string      `json:"release_date"`
 	Length      string      `gorm:"size:20" json:"length"`
 	Actresses   []*TActress `gorm:"many2many:t_actress_film;" json:"actresses"`
 	Images      []*TImage   `gorm:"foreignKey:film_id" json:"images"`

@@ -19,7 +19,7 @@ type FilmData struct {
 	Length      string
 	Genres      []string
 	Actresses   []Actress
-	ReleaseDate time.Time
+	ReleaseDate string
 	ImageUrl    string
 	Links       []Link
 	Images      []Image
@@ -91,10 +91,10 @@ func (m *film) Data() (result FilmData) {
 	return
 }
 
-func (m *film) releaseDate(text string) time.Time {
+func (m *film) releaseDate(text string) string {
 	result := strings.Split(strings.Split(text, "發行日期:")[1], "\n")[0]
 	result = strings.Trim(result, " ")
-	return StrToDate(result)
+	return result
 }
 func (m *film) length(text string) string {
 	result := strings.Split(strings.Split(text, "長度:")[1], "\n")[0]

@@ -32,14 +32,21 @@ func main() {
 	log.Println("注册路由--->")
 	routes.SetupRoutes(r)
 
-	if f, err := os.Stat("dist/"); err == nil && f.IsDir() {
+	if f, err := os.Stat("build/"); err == nil && f.IsDir() {
 		// 模板渲染
-		r.LoadHTMLGlob("dist/index.html")
+		templateDir := "build"
+		r.LoadHTMLGlob(templateDir + "/index.html")
 		// 静态目录
-		r.StaticFS("/css", http.Dir("dist/css"))
-		r.StaticFS("/js", http.Dir("dist/js"))
-		r.StaticFS("/img", http.Dir("dist/img"))
+		r.StaticFS("/css", http.Dir(templateDir+"/css"))
+		r.StaticFS("/js", http.Dir(templateDir+"/js"))
+		r.StaticFS("/img", http.Dir(templateDir+"/img"))
+		r.StaticFS("/static", http.Dir(templateDir+"/static"))
+		r.StaticFS("/images", http.Dir(templateDir+"/images"))
 	}
+
+	r.GET("/", func(request *gin.Context) {
+		request.HTML(http.StatusOK, "index.html", gin.H{"title": "Movie", "ce": "123456"})
+	})
 
 	// 启动服务
 	log.Println("启用服务--->")

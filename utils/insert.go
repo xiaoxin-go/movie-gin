@@ -123,7 +123,7 @@ func saveFilmImage(film model.TFilm, url string) {
 	}
 }
 func SaveImage(name, url1 string) error {
-	filename := "f:\\static\\images" + name + ".jpg"
+	filename := "./build/images" + name + ".jpg"
 	_, err := os.Stat(filename)
 	if err == nil {
 		fmt.Printf("%s is already exists", name)

@@ -3,3 +3,11 @@ GET http://localhost:8030/api/v1/films
 
 ###
 GET http://localhost:8030/api/v1/actress/detail?name=八掛うみ&page=1&size=2
+
+### 添加电影信息
+POST http://localhost:8030/api/v1/film
+Content-Type: application/json
+
+{
+  "name": "ABF-133"
+}
